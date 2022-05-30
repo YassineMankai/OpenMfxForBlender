@@ -9823,6 +9823,15 @@ static void def_geo_attribute_map_range(StructRNA *srna)
   RNA_def_property_update(prop, NC_NODE | NA_EDITED, "rna_ShaderNode_socket_update");
 }
 
+static void def_geo_pizza(StructRNA *srna)
+{
+  PropertyRNA *prop;
+  RNA_def_struct_sdna_from(srna, "NodeGeometryPizza", "storage");
+
+  prop = RNA_def_property(srna, "olive_count", PROP_INT, PROP_NONE);
+  RNA_def_property_int_sdna(prop, NULL, "olive_count");
+}
+
 static void def_geo_point_instance(StructRNA *srna)
 {
   static const EnumPropertyItem instance_type_items[] = {

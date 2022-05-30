@@ -163,6 +163,7 @@ set(SRC
   nodes/node_geo_mesh_to_curve.cc
   nodes/node_geo_mesh_to_points.cc
   nodes/node_geo_object_info.cc
+  nodes/node_geo_pizza.cc
   nodes/node_geo_points_to_vertices.cc
   nodes/node_geo_points_to_volume.cc
   nodes/node_geo_proximity.cc

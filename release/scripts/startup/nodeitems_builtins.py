@@ -735,6 +735,7 @@ geometry_node_categories = [
         NodeItem("GeometryNodeMeshIcoSphere"),
         NodeItem("GeometryNodeMeshLine"),
         NodeItem("GeometryNodeMeshUVSphere"),
+        NodeItem("GeometryNodePizza"),
     ]),
     GeometryNodeCategory("GEO_OUTPUT", "Output", items=[
         NodeItem("GeometryNodeViewer"),

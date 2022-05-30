@@ -1375,6 +1375,10 @@ typedef struct NodeGeometryAlignRotationToVector {
   uint8_t input_type_vector;
 } NodeGeometryAlignRotationToVector;
 
+typedef struct NodeGeometryPizza {
+  uint8_t olive_count;
+} NodeGeometryPizza;
+
 typedef struct NodeGeometryPointScale {
   /* GeometryNodeAttributeInputMode */
   uint8_t input_type;
