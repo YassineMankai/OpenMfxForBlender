@@ -153,9 +153,10 @@ static void node_geo_exec(GeoNodeExecParams params)
   GeometrySet output_geo = GeometrySet::create_with_mesh(mesh);
   params.set_output("Mesh", output_geo);
 
-  MeshComponent &component = output_geo.get_component_for_write<MeshComponent>();
   if (params.output_is_required("Base")) {
     // Create the field from a range and a mesh component:
+    MeshComponent component;
+    component.replace(mesh, GeometryOwnershipType::Editable);
     StrongAnonymousAttributeID id("Base");
     OutputAttribute_Typed<bool> attribute = component.attribute_try_get_for_output_only<bool>(
         id.get(), ATTR_DOMAIN_FACE);
@@ -170,6 +171,9 @@ static void node_geo_exec(GeoNodeExecParams params)
 
   if (params.output_is_required("Olives")) {
     // [...] Idem for olives
+    MeshComponent component;
+    component.replace(mesh, GeometryOwnershipType::Editable);
+
     StrongAnonymousAttributeID id("Olives");
     OutputAttribute_Typed<bool> attribute = component.attribute_try_get_for_output_only<bool>(
         id.get(), ATTR_DOMAIN_FACE);
