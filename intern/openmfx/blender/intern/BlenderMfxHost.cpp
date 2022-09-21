@@ -34,8 +34,11 @@
 #include "BKE_mesh.h" // BKE_mesh_new_nomain
 #include "BKE_main.h" // BKE_main_blendfile_path_from_global
 #include "BKE_customdata.h"
+#include "BKE_attribute_math.hh"
 
+#include "BLI_utildefines.h"
 #include "BLI_math_vector.h"
+#include "BLI_math_vec_types.hh"
 #include "BLI_string.h"
 #include "BLI_path_util.h"
 
@@ -838,9 +841,9 @@ OfxStatus BlenderMfxHost::setupCornerAttribute(OfxMeshHandle ofxMesh,
   else if (counts.blenderLoopCount > 0) {
     // request new buffer to copy data from existing polys, fill default values for edges
     MFX_CHECK(propertySuite->propSetInt(attrib, kOfxMeshAttribPropIsOwner, 0, 1));
-    afterAllocate.push_back([=]() {
+    afterAllocate.push_back([=, name = std::string(name)]() { // TODO: avoid converting to string -> name is char * and is lost when calback is called
       OfxPropertySetHandle attrib;
-      MFX_CHECK(meshEffectSuite->meshGetAttribute(ofxMesh, kOfxMeshAttribCorner, name, &attrib));
+      MFX_CHECK(meshEffectSuite->meshGetAttribute(ofxMesh, kOfxMeshAttribCorner, name.c_str(), &attrib));
       char *data = nullptr;
       MFX_CHECK(propertySuite->propGetPointer(attrib, kOfxMeshAttribPropData, 0, (void **)&data));
 
@@ -895,9 +898,9 @@ OfxStatus BlenderMfxHost::setupFaceMapAttribute(OfxMeshHandle ofxMesh,
                                                kOfxMeshAttribSemanticWeight,
                                                &attrib));
     MFX_CHECK(propertySuite->propSetInt(attrib, kOfxMeshAttribPropIsOwner, 0, 1));
-    afterAllocate.push_back([=]() {
+    afterAllocate.push_back([=, name= std::string(name)]() {
       OfxPropertySetHandle attrib;
-      MFX_CHECK(meshEffectSuite->meshGetAttribute(ofxMesh, kOfxMeshAttribFace, name, &attrib));
+      MFX_CHECK(meshEffectSuite->meshGetAttribute(ofxMesh, kOfxMeshAttribFace, name.c_str(), &attrib));
       int *data = nullptr;
       MFX_CHECK(propertySuite->propGetPointer(attrib, kOfxMeshAttribPropData, 0, (void **)&data));
 
@@ -1080,22 +1083,40 @@ OfxStatus BlenderMfxHost::extractExpectedAttributes(
     int idx = ofxMesh->attributes.find(key);
     if (idx == -1) {
         // TODO: check for errors
-      continue;
+        ++i; //TODO: check if adding this line doesn't break previous logic: this line is added so that the output_attribute correspond to the correct ofxattribute (check operation example c and c_vector)
+        continue;
     }
     const OfxAttributeStruct &ofxAttrib = ofxMesh->attributes[idx];
     char *ofxAttribData = (char*)ofxAttrib.properties[kOfxMeshAttribPropData].value[0].as_pointer;
     int ofxAttribStride = ofxAttrib.properties[kOfxMeshAttribPropStride].value[0].as_int;
+    int ofxAttribComponentCount = ofxAttrib.properties[kOfxMeshAttribPropComponentCount].value[0].as_int;
     
     //blender::bke::StrongAnonymousAttributeID id(requestedAttrib.name());
     const eAttrDomain domain = ATTR_DOMAIN_POINT;  // TODO
-    blender::bke::SpanAttributeWriter<float> attribute;
-    attribute = component.attributes_for_write()->lookup_or_add_for_write_only_span<float>(outputAttributes[i].get(),
-                                                                   domain);
-    float *destData = attribute.span.data();
-    for (int k = 0; k < counts.ofxPointCount; ++k) {
-      destData[k] = *attributeAt<float>(ofxAttribData, ofxAttribStride, k);
+    if (ofxAttribComponentCount == 1) {
+      blender::bke::SpanAttributeWriter<float> attribute;
+      attribute = component.attributes_for_write()->lookup_or_add_for_write_only_span<float>(
+          outputAttributes[i].get(), domain);
+      float *destData = attribute.span.data();
+      for (int k = 0; k < counts.ofxPointCount; ++k) {
+        destData[k] = *attributeAt<float>(ofxAttribData, ofxAttribStride, k);
+      }
+      attribute.finish();
     }
-    attribute.finish();
+    else {  // TODO: count <=3
+      blender::bke::SpanAttributeWriter<blender::float3> attribute;
+      attribute =
+          component.attributes_for_write()->lookup_or_add_for_write_only_span<blender::float3>(
+              outputAttributes[i].get(), domain);
+      blender::float3 *destData = attribute.span.data();
+      for (int k = 0; k < counts.ofxPointCount; ++k) {
+        for (int c = 0; c < ofxAttribComponentCount; c++) {
+          destData[k][c] = attributeAt<float>(ofxAttribData, ofxAttribStride, k)[c];
+        }
+      }
+      attribute.finish();
+    }
+    
     ++i;
   }
 

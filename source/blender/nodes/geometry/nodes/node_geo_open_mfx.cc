@@ -1028,14 +1028,24 @@ static void node_geo_exec(GeoNodeExecParams params)
     for (int j = 0; j < requestedAttribCount; ++j) {
       const auto &attribInfo = outputIt->requestedAttributes[j];
       const auto &attrib = outputIt->outputAttributes[j];
-      //if (params.output_is_required(attribInfo.name())) {
+      if (params.output_is_required(attribInfo.name())) {
         // TODO: switch on type
-        params.set_output(attribInfo.name(),
-                          AnonymousAttributeFieldInput::Create<float>(
-                              std::move(attrib), params.attribute_producer_name()));
+        switch (attribInfo.componentCount()) {
+          case 3:
+            params.set_output(attribInfo.name(),
+                              AnonymousAttributeFieldInput::Create<float3>(
+                                  std::move(attrib), params.attribute_producer_name()));
+            break;
+        default:
+            params.set_output(attribInfo.name(),
+                              AnonymousAttributeFieldInput::Create<float>(
+                                  std::move(attrib), params.attribute_producer_name()));
+            break;
+        }
+        
 
         outputIt->outputAttributes[j] = {};
-      //}
+      }
     }
   }
 
